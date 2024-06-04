@@ -1,0 +1,6 @@
+[submodule "src/bindings/cadical"]
+	path = src/bindings/cadical
+	url = https://github.com/arminbiere/cadical.git
+[submodule "src/bindings/aiger"]
+	path = src/bindings/aiger
+	url = https://github.com/arminbiere/aiger.git
