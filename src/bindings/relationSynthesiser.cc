@@ -551,11 +551,6 @@ void RelationSynthesiser::addNoReapplicationConstraint() {
             l++;
           }
         }
-        // for (int l = k; l < inputs.size() + j; l++) {
-        //   if (l != inputs.size() + i) {
-        //     clause[start_with + m + 2] = selection_variables[j][l];
-        //   }
-        // }
         solver.addClause(clause);
       }
     }

@@ -41,8 +41,8 @@ For checking SAT formulae the SAT solver [CaDiCaL](https://github.com/arminbiere
 
 We only provide instructions for building the tool on a LINUX system.
 ```
-git clone --recursive https://github.com/fxreichl/eSLIM.git synth
-cd synth/bindings 
+git clone --recursive https://github.com/fxreichl/eSLIM.git eSlim
+cd eSlim/src/bindings 
 mkdir build && cd build
 cmake ..
 make

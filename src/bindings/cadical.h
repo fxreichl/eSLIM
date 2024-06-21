@@ -66,10 +66,11 @@ inline bool CadicalSolver::TimeoutTerminator::terminate() {
   return elapsed_seconds.count() > max_runtime;
 }
 
-inline CadicalSolver::~CadicalSolver() {
-  // TODO: do we really need this? If the solver is in an invalid state we cannot disconnect the terminator.
-  // solver.disconnect_terminator();
-}
+// inline CadicalSolver::~CadicalSolver() {
+//   // solver.disconnect_terminator();
+// }
+
+inline CadicalSolver::~CadicalSolver()=default;
 
 inline void CadicalSolver::appendFormula(const std::vector<Clause>& formula) {
   for (auto& clause: formula) {

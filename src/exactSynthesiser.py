@@ -44,9 +44,6 @@ def main() :
   config.allowConstantsAsOutputs = True
   
 
-  if args.log_enc :
-    config.encoding_log_dir = args.log_enc[0]
-
   config.useTrivialRuleConstraint = False
   config.useAllStepsConstraint = False
   config.useNoReapplicationConstraint = False
@@ -55,7 +52,6 @@ def main() :
   spec = blifIO.getSpecification(args.specification)
   synth = subcircuitSynthesiser.SubcircuitSynthesiser(spec, config)
   
-
 
   t1_start = process_time()  
   gates = spec.getGateAliases()
@@ -72,13 +68,11 @@ def main() :
     blifIO.writeSpecification(args.synthesised_circuit, spec)
 
 
-
 if __name__ == "__main__" :
   parser = argparse.ArgumentParser(description="QBF based circuit synthesis")  
   parser.add_argument('specification', metavar='SPEC',help='The specification')
   parser.add_argument('synthesised_circuit', metavar='SYN',help='The synthesised circuit')
   parser.add_argument('--gs', nargs='?', const=2, type=int, help='The number of inputs of the gates')
-  parser.add_argument('--log-enc', nargs=1, help='Save the generated encodings in the given directory')
   parser.add_argument('-N', action='store_false',help='Non trivial')
   parser.add_argument('-A', action='store_false',help='All steps')
   parser.add_argument('-R', action='store_false',help='No Reapplication')

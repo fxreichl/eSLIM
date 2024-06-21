@@ -42,17 +42,9 @@ class CadicalSolver:
     result = self.solver.solve_limited(timeout, assumptions)
     self.solver_time = time.time() - start
     if result == 0 :
-      # raise CadicalSolver.CadicalTimeoutException
       raise TimeoutException
     if result == 10:
-      return True
-    elif result == 20:
-      return False
-    else :
-      raise SolverError
-      # assert False, "Invalid Cadical return status."
-      
-  def get_failed(self, assumptions):
+      return True      # assert False, "Invalid Cadical return status."f, assumptions):
     return self.solver.get_failed(assumptions)
       
   

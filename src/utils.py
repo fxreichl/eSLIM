@@ -111,7 +111,7 @@ class Configuration :
     # Compute the nodes where reconvergent paths join again
     self.compute_joining_gates = False
     # self.only_single_output_subcircuits = False
-    self.search_strategy = Configuration.SearchStrategy.inputReduction
+    self.search_strategy = Configuration.SearchStrategy.nonExhaustiveBFS
     # Synthesis Approach
     self.synthesis_approach = Configuration.SynthesisationMode.qbf
     # Window Options

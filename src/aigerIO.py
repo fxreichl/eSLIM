@@ -1,4 +1,4 @@
-# The py-aiger library seems not to be able to handle binary aiger files .
+# The py-aiger library seems not to be able to handle binary aiger files.
 # Thus, we directly use the aiger library.
 
 import bitarray
