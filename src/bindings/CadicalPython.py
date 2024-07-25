@@ -36,7 +36,7 @@ class CadicalSolver:
       assert False, "Invalid Cadical return status."
 
   def solve_limited(self, timeout, assumptions=[]) :
-    if timeout == None:
+    if timeout is None:
       return self.solve(assumptions)
     start = time.time()
     result = self.solver.solve_limited(timeout, assumptions)
@@ -44,10 +44,15 @@ class CadicalSolver:
     if result == 0 :
       raise TimeoutException
     if result == 10:
-      return True      # assert False, "Invalid Cadical return status."f, assumptions):
+      return True     
+    elif result == 20:
+      return False
+    else:
+      assert False, "Invalid Cadical return status."
+      
+  def get_failed(self, assumptions):
     return self.solver.get_failed(assumptions)
       
-  
   def get_values(self, variables):
     return self.solver.get_values(variables)
       
