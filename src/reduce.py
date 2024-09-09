@@ -10,9 +10,7 @@ from utils import Configuration
 def getSynthMode(val : str) :
   if val == "qbf" :
     return Configuration.SynthesisationMode.qbf
-  elif val == "equivalent" :
-    return Configuration.SynthesisationMode.exact
-  elif val == "rel-sat" :
+  elif val == "sat" :
     return Configuration.SynthesisationMode.relation_sat
   else :
     assert False
@@ -33,7 +31,7 @@ def getSynthMode(val : str) :
 
 if __name__ == "__main__" :
 
-  synthesis_approaches = ['qbf', 'equivalent', 'rel-sat']
+  synthesis_approaches = ['qbf', 'sat']
   parser = argparse.ArgumentParser(description="QBF/SAT based circuit synthesis")  
   parser.add_argument('specification', metavar='SPEC',help='The specification')
   parser.add_argument('synthesised_circuit', metavar='SYN',help='The synthesised circuit')
