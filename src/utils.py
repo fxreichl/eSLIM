@@ -180,7 +180,7 @@ class Configuration :
   def validateConfig(self) :
     # assert self.traversal_strategy in {1}, "Invalid traversal strategy selected"
     assert 0 < self.taboo_ratio and self.taboo_ratio < 1, "Invalid taboo_ratio"
-    assert 0 < self.probability_bound and self.probability_bound < 1, "Invalid probability bound"
+    assert 0 < self.probability_bound and self.probability_bound <= 1, "Invalid probability bound"
     assert self.subcircuit_size_increase_limit > 0, "Invalid subcircuit_size_increase_limit"
     if self.synthesis_approach in {Configuration.SynthesisationMode.qbf, Configuration.SynthesisationMode.exact} :
       assert self.qbf_solver in {Configuration.QBFSolver.miniQU, Configuration.QBFSolver.QFun, Configuration.QBFSolver.SMSG, Configuration.QBFSolver.quabs}, "Invalid QBF solver selected"

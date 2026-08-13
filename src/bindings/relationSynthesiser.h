@@ -35,6 +35,7 @@ class RelationSynthesiser {
   int checkSize(unsigned int size, double timeout);
   int checkSize(unsigned int size);
   std::vector<int> getModel();
+  int getLastSize();
 
   const std::vector<std::vector<int>>& getSelectionVariables() const;
   const std::vector<std::vector<int>>& getDefinitionVariables() const;
@@ -58,7 +59,8 @@ class RelationSynthesiser {
   std::vector<std::vector<int>> selection_variables;
   std::vector<std::vector<int>> gate_definition_variables;
   std::vector<std::vector<int>> gate_output_variables;
-  std::vector<std::vector<int>> gate_variables;
+  // std::vector<std::vector<int>> gate_variables;
+  std::unordered_map<int, std::vector<int>> gate_variables;
   std::unordered_map<int, std::vector<int>> connection_variables;
 
   std::unordered_map<int,int> input_index_map;
@@ -80,6 +82,7 @@ class RelationSynthesiser {
   void setupAigerConstraints();
 
   int setupOutputVariable(int output_index, int tt_index, const std::vector<int>& input_assm);
+  void setupActivationCompatibilityConstraints();
   void setupConnectionVariables();
   // If we have multiple cyclic pairs, different pairs may form form a cycle together
   // Assume we have two different pairs (x,y) and (a,b) in potential_cycles.
@@ -97,9 +100,9 @@ class RelationSynthesiser {
   void addOrderedStepsConstraint();
 
   std::vector<std::vector<int>> getCompatibilityPrefixes(const std::vector<int>& indices, int first_gate) const;
-  void setCompatibilityInputValues( std::vector<int>& gate_values, const std::vector<int>& indices, 
-                                    int first_gate_input, int tt_line) const;
-  void updateCompatibilityInputValues(std::vector<int>& gate_values, int tt_line, int gate_line) const;
+  void setCompatibilityInputValues( std::vector<int>& gate_values, const std::vector<int>& gate_vars, const std::vector<int>& indices, 
+                                    int first_gate_input) const;
+  void updateCompatibilityInputValues(std::vector<int>& gate_values, int gate_line) const;
 
   // activator = -1: do not use an activation variable
   void addCardinalityConstraint(const std::vector<int>& vars, unsigned int cardinality, int activator = 0);
@@ -114,6 +117,8 @@ class RelationSynthesiser {
   // computes the first position where the corresponding index describes a gate. 
   int getFirstGateInput(const std::vector<int>& indices) const;
   int getIndexOffset(int tt_index, const std::vector<int>& indices) const;
+
+  const std::vector<int>& getGateVariables(int tt_index);
 
   // 1 if true, -1 if false
   static int getPolarity(int idx, int shift);

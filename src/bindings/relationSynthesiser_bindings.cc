@@ -14,6 +14,7 @@ PYBIND11_MODULE(relationSynthesiser, m) {
         .def("checkSize", py::overload_cast<unsigned int>(&circuit_synthesis::RelationSynthesiser::checkSize))
         .def("checkSizeTO", py::overload_cast<unsigned int, double>(&circuit_synthesis::RelationSynthesiser::checkSize))
         .def("getModel", &circuit_synthesis::RelationSynthesiser::getModel)
+        .def("getLastSize", &circuit_synthesis::RelationSynthesiser::getLastSize)
         .def("toggleNoReapplicationRule", &circuit_synthesis::RelationSynthesiser::toggleNoReapplicationRule)
         .def("getSelectionVariables", &circuit_synthesis::RelationSynthesiser::getSelectionVariables, py::return_value_policy::reference_internal)
         .def("getDefinitionVariables", &circuit_synthesis::RelationSynthesiser::getDefinitionVariables, py::return_value_policy::reference_internal)

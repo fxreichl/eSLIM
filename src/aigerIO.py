@@ -15,15 +15,23 @@ def getSpecification(fname) :
   pis = [processAigerVariable(x) for x in aiger_interface.getInputs()]
   pos = [processAigerVariable(x) for x in aiger_interface.getOutputs()]
   pos_set = set(pos)
+  const_alias = None
+  if aiger_interface.getConstantFalse() in pos_set :
+    aliases = set(aiger_interface.getAnd(i)[0] for i in range(aiger_interface.getNofAnds()))
+    const_alias = processAigerVariable(max(aliases)) + 1
+    pos = [x if x != aiger_interface.getConstantFalse() else const_alias for x in pos]
+    pos_set.remove(aiger_interface.getConstantFalse())
+    pos_set.add(const_alias)
   spec = Specification(pis, pos)
+  if const_alias is not None :
+    spec.getConstantAlias(const_alias)
   for idx, out in enumerate(aiger_interface.getOutputs()) :
     if isNegatedAigerLiteral(out) :
       spec.negated_pos[idx] = 1
   negated_gates = set()
   for i in range(aiger_interface.getNofAnds()) :
     addGate(spec, aiger_interface, i, negated_gates, pos_set)
-  
-  spec.init(False)
+  spec.init()
   return spec
 
 def writeSpecification(fname, spec) :
@@ -102,10 +110,10 @@ def addGate(spec, aiger_interface, gate_idx, negated_gates, pos_set) :
   lhs, rhs1, rhs2 = aiger_interface.getAnd(gate_idx)
   alias = processAigerVariable(lhs)
   if rhs1 == aiger_interface.getConstantFalse() or rhs2 == aiger_interface.getConstantFalse() :
-    spec.addGateUnsorted(alias, [], bitarray.util.zeros(1))
+    spec.addGate(alias, [], bitarray.util.zeros(1))
   elif rhs1 == aiger_interface.getConstantTrue() :
     if rhs2 == aiger_interface.getConstantTrue() :
-      spec.addGateUnsorted(alias, [], bitarray.util.zeros(1))
+      spec.addGate(alias, [], bitarray.util.zeros(1))
       negated_gates.add(alias)
       if alias in pos_set :
         # we toggle the value as the output may already be negated - in an AIG an output may be the negation of a gate
@@ -113,7 +121,7 @@ def addGate(spec, aiger_interface, gate_idx, negated_gates, pos_set) :
     else :
       if processAigerVariable(rhs2) in negated_gates :
         rhs2 = negateAigerLiteral(rhs2)
-      spec.addGateUnsorted(alias, [processAigerVariable(rhs2)], bitarray.bitarray([0,1]))
+      spec.addGate(alias, [processAigerVariable(rhs2)], bitarray.bitarray([0,1]))
       if isNegatedAigerLiteral(rhs2) :
         negated_gates.add(alias)
         if alias in pos_set :
@@ -121,7 +129,7 @@ def addGate(spec, aiger_interface, gate_idx, negated_gates, pos_set) :
   elif rhs2 == aiger_interface.getConstantTrue() :
     if processAigerVariable(rhs1) in negated_gates :
       rhs1 = negateAigerLiteral(rhs1)
-    spec.addGateUnsorted(alias, [processAigerVariable(rhs1)], bitarray.bitarray([0,1]))
+    spec.addGate(alias, [processAigerVariable(rhs1)], bitarray.bitarray([0,1]))
     if isNegatedAigerLiteral(rhs1) :
       negated_gates.add(alias)
       if alias in pos_set :
@@ -136,13 +144,13 @@ def addGate(spec, aiger_interface, gate_idx, negated_gates, pos_set) :
       negated_gates.add(alias)
       if alias in pos_set :
         spec.toggleOutputNegation(alias)
-      spec.addGateUnsorted(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,1,1,1]))
+      spec.addGate(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,1,1,1]))
     elif isNegatedAigerLiteral(rhs1) :
-      spec.addGateUnsorted(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,1,0,0]))
+      spec.addGate(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,1,0,0]))
     elif isNegatedAigerLiteral(rhs2) :
-      spec.addGateUnsorted(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,0,1,0]))
+      spec.addGate(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,0,1,0]))
     else :
-      spec.addGateUnsorted(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,0,0,1]))
+      spec.addGate(alias, [processAigerVariable(rhs1), processAigerVariable(rhs2)], bitarray.bitarray([0,0,0,1]))
 
 
 def processAigerVariable(var) :

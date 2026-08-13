@@ -6,9 +6,9 @@ from utils import negateTable
 from utils import getBitSeq
 
 # ordered_blif: the gates are ordered topologically
-def getSpecification(fname, ordered_blif=False) :
+def getSpecification(fname) :
   parser = BlifParser()
-  return parser.parse(fname, ordered_blif)
+  return parser.parse(fname)
 
 def writeSpecification(fname, spec, spec_name = "spec") :
   with open(fname,"w") as file: 
@@ -105,13 +105,13 @@ class BlifParser :
   # def __init__(self) :
   #   pass
 
-  def parse(self, fname, ordered_blif) :
+  def parse(self, fname) :
     self.max_var = 0
     self.alias_renaming = {}
     self.alias_names = set()
     with open(fname,"r") as file: 
       inputs, outputs = self.readBlifIO(file)
-      spec_builder = SpecificationBuilder(inputs, outputs, ordered_blif)
+      spec_builder = SpecificationBuilder(inputs, outputs)
       self.readGates(spec_builder, file)
     return spec_builder.getSpecification()
 
@@ -218,17 +218,18 @@ class BlifParser :
 
 class SpecificationBuilder :
 
-  def __init__(self, pis, pos, gates_topologoically_ordered = False) :
+  def __init__(self, pis, pos) :
     self.specification = Specification(pis, pos)
     self.negated_gates = set()
+    self.seen_gates = set(pis)
     self.pos_set = set(pos)
-    self.gates_topologoically_ordered = gates_topologoically_ordered
 
 
   # In a blif gate the lines describing the gate can either determine the input combinations 
   # where the gate is true (output_value = True) or false (output_value = False)
   def addGate(self, gate_alias, inputs, lines, output_value) :
     table = self.getTableFromGate(lines, inputs, output_value)
+    self.seen_gates.add(gate_alias)
     if len(table) == 0 :
       inputs = []
     if not isNormalised(table) :
@@ -236,10 +237,7 @@ class SpecificationBuilder :
       table = negateTable(table)
       if gate_alias in self.pos_set :
         self.specification.negateOutput(gate_alias)
-    if self.gates_topologoically_ordered :
-      self.specification.addGate(gate_alias, inputs, table)
-    else :
-      self.specification.addGateUnsorted(gate_alias, inputs, table)
+    self.specification.addGate(gate_alias, inputs, table)
 
 
   # The method takes a blif like representation of a gate.
@@ -257,6 +255,9 @@ class SpecificationBuilder :
         return bitarray.bitarray([1])
       else :
         return bitarray.bitarray([0])
+    if any(x not in self.seen_gates for x in inputs) :
+      # This program requires input circuits to be topologically sorted!
+      raise BlifParser.InvalidBlifException("The given blif is not topologically sorted!")
     input_indices_to_negate = set(i for i,x  in enumerate(inputs) if x in self.negated_gates)
     nof_inputs = len(lines[0])
     # if negated is true the default value is 1 -- only if there is a line in the table the output is 0.
@@ -281,6 +282,6 @@ class SpecificationBuilder :
     return table
 
   def getSpecification(self) :
-    self.specification.init(self.gates_topologoically_ordered)
+    self.specification.init()
     return self.specification
 

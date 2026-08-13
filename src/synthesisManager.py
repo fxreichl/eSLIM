@@ -22,16 +22,16 @@ import aigerIO
 class Synthesismanager :
 
   @staticmethod
-  def getSpecification(spec, ordered_inputs = False) :
+  def getSpecification(spec) :
     if spec.endswith(".aig") or spec.endswith(".aag") :
       return aigerIO.getSpecification(spec)
     else :
       assert spec.endswith(".blif")
-      return blifIO.getSpecification(spec, ordered_inputs)
+      return blifIO.getSpecification(spec)
 
-  def __init__(self, spec_file, config : Configuration, ordered_spec = False) :
+  def __init__(self, spec_file, config : Configuration) :
     logging.getLogger().setLevel(logging.INFO)
-    self.specification = Synthesismanager.getSpecification(spec_file, ordered_spec)
+    self.specification = Synthesismanager.getSpecification(spec_file)
     self.specification.setConfig(config)
     self.initial_nof_gates = self.specification.getNofGates()
     self.initial_depth = self.specification.getDepth()

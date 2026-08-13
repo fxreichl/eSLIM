@@ -17,16 +17,16 @@ import blifIO
 class Synthesiser :
     
   @staticmethod
-  def getSpecification(spec, ordered_inputs = False) :
+  def getSpecification(spec) :
     if spec.endswith(".aig") or spec.endswith(".aag") :
       return aigerIO.getSpecification(spec)
     else :
       assert spec.endswith(".blif")
-      return blifIO.getSpecification(spec, ordered_inputs)
+      return blifIO.getSpecification(spec)
 
   @staticmethod
-  def getSynthesiser(spec, config : Configuration, ordered_inputs = False) :
-    specification = Synthesiser.getSpecification(spec, ordered_inputs)
+  def getSynthesiser(spec, config : Configuration) :
+    specification = Synthesiser.getSpecification(spec)
     return Synthesiser(specification, config)
   
   def reduce(self, budget, subcircuit_size) :

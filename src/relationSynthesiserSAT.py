@@ -34,13 +34,16 @@ class RelationSynthesiser :
   # status -1: Given relation could not be realised
   # deprecated status 2: no circuit could be computed because of a memory-out
   def synthesise(self, nof_gates, nof_gate_inputs, gate_names, check_initial) :
-    self.nof_gates = nof_gates
+    assert nof_gates > 0, f"Invalid nof gates given: {nof_gates}"
+    size_to_check = nof_gates if check_initial else nof_gates - 1
+    # self.nof_gates = nof_gates
+    self.nof_gates = size_to_check
     cfg = ConfigC(nof_gate_inputs, self.config.synthesiseAig, self.config.allowConstantsAsOutputs, 
                   self.config.allowInputsAsOutputs, self.config.useTrivialRuleConstraint, self.config.useAllStepsConstraint, 
                   self.config.useNoReapplicationConstraint, self.config.useOrderedStepsConstraint)
     encoding_start = time.time()
     # try :
-    synthesiser = RSynth(self.relation, self.potential_cycles, self.inputs, self.outputs, nof_gates, cfg)
+    synthesiser = RSynth(self.relation, self.potential_cycles, self.inputs, self.outputs, size_to_check, cfg)
     # except MemoryError:
     #    # the encoding may get too large.
     #   return 2, None
@@ -49,36 +52,21 @@ class RelationSynthesiser :
     model = None
     if self.timer.useTimeout() and not self.timer.isTimeoutSet(nof_gates) :
       self.timer.initTimeout(nof_gates)
-    if check_initial :
-      status = self._checkSize(synthesiser, nof_gates)
-      if status == 20 and self.config.useNoReapplicationConstraint:
-        synthesiser.toggleNoReapplicationRule()
-        status = self._checkSize(synthesiser, nof_gates)
-        synthesiser.toggleNoReapplicationRule()
-      if status == 20 :
+
+    min_found_size = None
+    while size_to_check >= 0 and (status := self._checkSize(synthesiser, size_to_check)) == 10 :
+      model = synthesiser.getModel()
+      min_found_size = synthesiser.getLastSize()
+      size_to_check = min_found_size - 1
+
+    if model is None :
+      if status == 20 and check_initial:
         logging.warning("Warning: Relation could not be represented")
         return -1, None
-      elif status == 10 :
-        model = synthesiser.getModel()
-      # elif status == 30 :
-      #   return 2, None
       else :
-        return 1, None
-    
-    next_size_to_check = nof_gates - 1
-    while next_size_to_check >= 0 and self._checkSize(synthesiser, next_size_to_check) == 10 :
-      model = synthesiser.getModel()
-      next_size_to_check -= 1
-    circuit_size = next_size_to_check + 1
-    if self.config.allowConstantsAsOutputs or self.config.allowInputsAsOutputs and  circuit_size > 0 :
-      if self._checkSize(synthesiser, 0) == 10 :
-        model = synthesiser.getModel()
-        circuit_size = 0
-    if model is None :
-      assert not check_initial
-      return 3, None
-    return 0, self._extractCircuitFromAssignment(model, circuit_size, gate_names, synthesiser)
-    
+         return 1, None
+
+    return 0, self._extractCircuitFromAssignment(model, min_found_size, gate_names, synthesiser)
       
       
   def _checkSize(self, synth, size) :

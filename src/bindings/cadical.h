@@ -35,12 +35,13 @@ class CadicalSolver {
   std::vector<int> getFailed(const std::vector<int>& assumptions);
   std::vector<int> getValues(const std::vector<int>& variables);
   std::vector<int> getModel();
+  int val(int variable);
   double getRunTime() const;
   bool isReady() const;
 
+
  private:
   void assumeAll(const std::vector<int>& assumptions);
-  int val(int variable);
   double last_runtime;
   CaDiCaL::Solver solver;
 

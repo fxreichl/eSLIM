@@ -58,7 +58,7 @@ reduce.py <Specification> <Result> <Limit>
 ```
 #### Inputs
 
-- ```Specification``` the circuit to minimize. Given either in the BLIF or in the AIGER format. If the BLIF format is used than the input must be sorted topologically, i.e., gates must be introduced before they are used. Note that not all current best implementations in the EPFL suite are sorted topologically.
+- ```Specification``` the circuit to minimize. Given either in the BLIF or in the AIGER format. If the BLIF or the ASCII-AIGER format is used than the input must be sorted topologically, i.e., gates must be introduced before they are used. Note that not all current best implementations in the EPFL suite are sorted topologically.
 - ```Result``` the file to which the resulting circuit shall be written. By default, the result is given as a BLIF. By using the options ***--aig*** and ***--aig-out*** the result can be given in the AIGER format (if the filename has the ***.aag*** extension the ASCII AIGER format is used otherwise the binary AIGER format is used).
 - ```Limit``` the available time budget given in seconds.
 

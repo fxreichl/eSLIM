@@ -118,14 +118,14 @@ class SpecificationManager :
       pi_set = set(sub_spec.getInputs())
       for gate in sub_spec.gateTraversal() :
         new_gate_inputs = [output_renamings[x] if x in pi_set and x in output_renamings else x for x in gate.inputs]
-        combined_specification.addGateUnsorted(gate.getAlias(), new_gate_inputs, gate.table.copy()) # Do we really need to copy? The parts are not really necessary after combining
+        combined_specification.addGate(gate.getAlias(), new_gate_inputs, gate.table.copy()) # Do we really need to copy? The parts are not really necessary after combining
     for pos_idx, is_negated in enumerate(self.negated_pos) :
       combined_specification.negated_pos[pos_idx] = is_negated
 
     # Several parts may contain a constant output. 
     # But init will remove all unnecessary ones.
     # print(f"Window output renaming: {output_renamings}")
-    combined_specification.init(False)
+    combined_specification.init()
     return combined_specification
 
   def sortAliases(self, aliases, spec) :

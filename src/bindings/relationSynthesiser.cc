@@ -36,10 +36,11 @@ int RelationSynthesiser::checkSize(unsigned int size) {
 
 int RelationSynthesiser::checkSize(unsigned int size, double timeout) {
   std::vector<int> assumptions;
-  assumptions.reserve(max_size + 1);
-  for (int i = 0; i < size; i++) {
-    assumptions.push_back(gate_activation_variables[i]);
-  }
+  // assumptions.reserve(max_size + 1);
+  // for (int i = 0; i < size; i++) {
+  //   assumptions.push_back(gate_activation_variables[i]);
+  // }
+  assumptions.reserve(max_size - size + 1);
   for (int i = size; i < max_size; i++) {
     assumptions.push_back(-gate_activation_variables[i]);
   }
@@ -57,23 +58,34 @@ std::vector<int> RelationSynthesiser::getModel() {
   return solver.getModel();
 }
 
+// the size of the encoded circuit can be determined from the last activation variable that is set to true.
+int RelationSynthesiser::getLastSize() {
+  for (int i = 0; i < max_size; i++) {
+    if (solver.val(gate_activation_variables[i]) < 0) {
+      return i;
+    }
+  }
+  return max_size;
+}
+
 void RelationSynthesiser::setupEncoding() {
   setupVariables();
   setupStructuralConstraints();
   setupSymmetryBreaking();
   setupEquivalenceConstraints();
+  setupCompatibilityConstraints();
 }
 
 void RelationSynthesiser::setupVariables() {
   gate_activation_variables.reserve(max_size);
   selection_variables.reserve(max_size);
   gate_definition_variables.reserve(max_size);
-  gate_variables.reserve(max_size);
+  // gate_variables.reserve(max_size);
   for (int i = 0; i < max_size; i++) {
     gate_activation_variables.push_back(getNewVariable());
     selection_variables.push_back(getNewVariableVector(inputs.size() + i));
     gate_definition_variables.push_back(getNewVariableVector(pow2(config.gate_size) - 1));
-    gate_variables.push_back(getNewVariableVector(pow2(inputs.size()) - 1));
+    // gate_variables.push_back(getNewVariableVector(pow2(inputs.size()) - 1));
   }
   gate_output_variables.reserve(max_size + config.constant_outputs + config.inputs_as_outputs * inputs.size());
   for (int i = 0; i < max_size + config.constant_outputs + config.inputs_as_outputs * inputs.size(); i++) {
@@ -89,14 +101,21 @@ void RelationSynthesiser::setupVariables() {
 }
 
 void RelationSynthesiser::setupStructuralConstraints() {
+  setupActivationCompatibilityConstraints();
   constrainSelectionVariables();
   constraintGateOutputVariables();
-  setupCompatibilityConstraints();
+  // setupCompatibilityConstraints();
   if (!potential_cycles.empty()) {
     setupCycleConstraints();
   }
   if (config.aig) {
     setupAigerConstraints();
+  }
+}
+
+void RelationSynthesiser::setupActivationCompatibilityConstraints() {
+  for (int i = 1; i < max_size; i++) {
+    solver.addClause({-gate_activation_variables[i], gate_activation_variables[i-1]});
   }
 }
 
@@ -146,7 +165,7 @@ void RelationSynthesiser::setupCompatibilityConstraints() {
   // By using prev_permutation we get all possible permutations of the filter
   filter.resize(inputs.size() + max_size - 1);
   std::vector<int> indices(config.gate_size,0);
-  int tt_size = RelationSynthesiser::pow2(inputs.size()) - 1;
+  // int tt_size = RelationSynthesiser::pow2(inputs.size()) - 1;
   do {
     indices.clear();
     for (int i = 0; i < inputs.size() + max_size - 1; i++) {
@@ -161,20 +180,21 @@ void RelationSynthesiser::setupCompatibilityConstraints() {
     int nof_non_pi_inputs = config.gate_size - first_gate_input;
     std::vector<std::vector<int>> prefixes = getCompatibilityPrefixes(indices, first_gate);
     std::vector<int> input_values(config.gate_size - first_gate_input, 0);
-    for (int tt = 0; tt < tt_size; tt++) {
+    for (const auto& [tt, gate_vars] : gate_variables) {
+    // for (int tt = 0; tt < tt_size; tt++) {
       int offset = getIndexOffset(tt, indices);
-      setCompatibilityInputValues(input_values, indices, first_gate_input, tt);
+      setCompatibilityInputValues(input_values, gate_vars, indices, first_gate_input);
       int start_with = 0;
       if (offset == 0) {
         start_with = 1;
         for (int j = 0; j < prefixes.size(); j++) {
-          solver.addCombinedClause(prefixes[j], input_values, {-gate_variables[first_gate + j][tt]});
+          solver.addCombinedClause(prefixes[j], input_values, {-gate_vars[first_gate + j]});
         }
       }
       for (int i = start_with; i < pow2(nof_non_pi_inputs); i++) {
-        updateCompatibilityInputValues(input_values, tt, i);
+        updateCompatibilityInputValues(input_values, i);
         for (int j = 0; j < prefixes.size(); j++) {
-          std::vector<int> cl {-gate_definition_variables[first_gate + j][offset + i - 1], gate_variables[first_gate + j][tt]};
+          std::vector<int> cl {-gate_definition_variables[first_gate + j][offset + i - 1], gate_vars[first_gate + j]};
           solver.addCombinedClause(prefixes[j], input_values, cl);
           cl[0] = -cl[0];
           cl[1] = -cl[1];
@@ -184,6 +204,15 @@ void RelationSynthesiser::setupCompatibilityConstraints() {
     }
   // we want to start with 1..10..0 thus we use prev_permutation instead of next_permutation
   } while (std::prev_permutation(filter.begin(), filter.end()));
+}
+
+const std::vector<int>& RelationSynthesiser::getGateVariables(int tt_index) {
+  auto it = gate_variables.find(tt_index);
+  if (it != gate_variables.end()) {
+    return it->second;
+  }
+  gate_variables[tt_index] = getNewVariableVector(max_size);
+  return gate_variables.at(tt_index);
 }
 
 void RelationSynthesiser::setupEquivalenceConstraints() {
@@ -223,9 +252,10 @@ void RelationSynthesiser::setupEquivalenceConstraints() {
 
 int RelationSynthesiser::setupOutputVariable(int output_index, int tt_index, const std::vector<int>& input_assm) {
   int var = getNewVariable();
+  const std::vector<int> gate_vars = getGateVariables(tt_index);
   std::vector<int> clause;
   for (int i = 0; i < max_size; i++) {
-    clause.assign({-gate_activation_variables[i], -gate_output_variables[i][output_index], -gate_variables[i][tt_index], var});
+    clause.assign({-gate_activation_variables[i], -gate_output_variables[i][output_index], -gate_vars[i], var});
     solver.addClause(clause);
     clause[2] = -clause[2];
     clause[3] = -clause[3];
@@ -350,15 +380,15 @@ std::vector<std::vector<int>> RelationSynthesiser::getCompatibilityPrefixes(cons
   return clauses;
 }
 
-void RelationSynthesiser::setCompatibilityInputValues(std::vector<int>& gate_values, const std::vector<int>& indices, 
-                                                      int first_gate_input, int tt_line) const {
+void RelationSynthesiser::setCompatibilityInputValues(std::vector<int>& gate_values, const std::vector<int>& gate_vars, const std::vector<int>& indices, 
+                                                      int first_gate_input) const {
   for (int i = first_gate_input; i < config.gate_size; i++) {
     int input_index = indices[i] - inputs.size();
-    gate_values[i - first_gate_input] = gate_variables[input_index][tt_line];
+    gate_values[i - first_gate_input] = gate_vars[input_index];
   }
 }
 
-void RelationSynthesiser::updateCompatibilityInputValues(std::vector<int>& gate_values, int tt_line, int gate_line) const {
+void RelationSynthesiser::updateCompatibilityInputValues(std::vector<int>& gate_values, int gate_line) const {
   for (int i = 0; i < gate_values.size(); i++) {
     int polarity = getPolarity(gate_line, gate_values.size() - i - 1);
     gate_values[i] = polarity * abs(gate_values[i]);
@@ -497,7 +527,12 @@ void RelationSynthesiser::addUseAllStepsConstraint() {
     std::vector<int> clause (gate_output_variables[i].begin(), gate_output_variables[i].end());
     clause.reserve(max_size - i + 1);
     for (int j = i + 1; j < max_size; j++) {
-      clause.push_back(selection_variables[j][inputs.size() + i]);
+      // clause.push_back(selection_variables[j][inputs.size() + i]);
+      int isused = getNewVariable();
+      // The gate is used by another (active) gate.
+      solver.addClause({-isused, selection_variables[j][inputs.size() + i]});
+      solver.addClause({-isused, gate_activation_variables[j]});
+      clause.push_back(isused);
     }
     clause.push_back(-gate_activation_variables[i]);
     solver.addClause(clause);

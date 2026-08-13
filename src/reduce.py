@@ -156,9 +156,7 @@ if __name__ == "__main__" :
   config.allowConstantsAsOutputs = args.cO
   config.allowInputsAsOutputs = args.iO
   
-
-  ordered_specification = False
-  synthesiser = Synthesismanager(spec, config, ordered_specification)
+  synthesiser = Synthesismanager(spec, config)
 
   if args.restarts :
     config.runs = args.restarts[0] + 1
