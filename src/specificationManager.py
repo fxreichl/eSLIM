@@ -114,11 +114,30 @@ class SpecificationManager :
         combined_pos[out_idx] = input
     combined_specification = Specification(combined_pis, combined_pos)
     output_renamings = {x : sub_circuits_outputs[spec_idx][idx] for spec_idx, _ in enumerate(partitions) for idx, x in enumerate(self.partition_outputs[spec_idx]) }
+    # Gates must be added after their inputs (addGate asserts it), and the partition order --
+    # windows first, the remaining part last -- does not guarantee that: a window gate may read
+    # a gate of the remaining part, or of a later window through output_renamings. So collect
+    # every gate first and insert in dependency order (agentic-synthesis, 2026-09-02; on a
+    # BLIF input this raised KeyError in addGate on the first recombination).
+    pending = []
     for spec_idx, sub_spec in enumerate(partitions) :
       pi_set = set(sub_spec.getInputs())
       for gate in sub_spec.gateTraversal() :
         new_gate_inputs = [output_renamings[x] if x in pi_set and x in output_renamings else x for x in gate.inputs]
-        combined_specification.addGate(gate.getAlias(), new_gate_inputs, gate.table.copy()) # Do we really need to copy? The parts are not really necessary after combining
+        pending.append((gate.getAlias(), new_gate_inputs, gate.table.copy())) # Do we really need to copy? The parts are not really necessary after combining
+    present = set(combined_specification.alias2outputs.keys())
+    while pending :
+      remaining = []
+      progressed = False
+      for alias, inputs, table in pending :
+        if all(x in present for x in inputs) :
+          combined_specification.addGate(alias, inputs, table)
+          present.add(alias)
+          progressed = True
+        else :
+          remaining.append((alias, inputs, table))
+      assert progressed, f"Window recombination: {len(remaining)} gates have an input that no partition provides, e.g. {remaining[0][:2]}"
+      pending = remaining
     for pos_idx, is_negated in enumerate(self.negated_pos) :
       combined_specification.negated_pos[pos_idx] = is_negated
 
