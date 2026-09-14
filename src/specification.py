@@ -604,6 +604,30 @@ class Specification :
     self.alias2gate[gate_alias] = Gate(gate_alias, inputs, table)
     self.alias2outputs[gate_alias] = set()
     self.alias2level[gate_alias] = None
+
+  # Does not require that all input gates are part of the specification.
+  # As the input gates are not necessarily available the outputs of the inputs cannot be set.
+  def addGateUnsorted(self, gate_alias, inputs, table) :
+    assert isinstance(table, bitarray.bitarray)
+    self.max_var = max(self.max_var, gate_alias)
+    assert len(table) == 2 ** len(inputs)
+    assert isNormalised(table)
+    self.alias2gate[gate_alias] = Gate(gate_alias, inputs, table)
+    self.alias2outputs[gate_alias] = set()
+    self.alias2level[gate_alias] = None
+
+  def setGateOutputs(self) :
+    pis_set = set(self.pis)
+    # A PI may be an PO
+    to_process = [x for x in self.pos if x not in pis_set]
+    seen = set(to_process)
+    while len(to_process) > 0 :
+      alias = to_process.pop()
+      for x in self.getGate(alias).inputs :
+        self.alias2outputs[x].add(alias)
+        if not x in seen and not x in pis_set:
+          seen.add(x)
+          to_process.append(x)
             
   def removeRedundant(self) :
     to_process = set()
